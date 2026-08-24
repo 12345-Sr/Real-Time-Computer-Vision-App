@@ -12,3 +12,4 @@ build/
 postgres_data/
 data/
 models/*.pt
+backend/*.pt
