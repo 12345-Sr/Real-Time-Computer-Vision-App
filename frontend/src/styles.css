@@ -44,6 +44,11 @@ h1 { margin: 4px 0 0; font-size: 2.2rem; }
   cursor: pointer;
 }
 
+.controls { display: flex; gap: 10px; align-items: center; }
+.controls input { width: 72px; padding: 11px; border: 1px solid #334155; border-radius: 8px; background: #111c2d; color: #e4ebff; }
+.status-offline { color: #f87171; font-weight: 700; }
+.error-message { color: #fca5a5; }
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -92,6 +97,9 @@ h1 { margin: 4px 0 0; font-size: 2.2rem; }
   border: 1px solid rgba(148, 163, 184, 0.2);
   overflow: hidden;
 }
+
+.camera-placeholder img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.camera-placeholder > span:not(.stat-overlay) { position: absolute; inset: 0; display: grid; place-items: center; color: #94a3b8; }
 
 .camera-placeholder::before {
   content: "";

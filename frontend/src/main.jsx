@@ -1,8 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 
 function App() {
+  const [running, setRunning] = useState(false);
+  const [source, setSource] = useState('0');
+  const [metrics, setMetrics] = useState({ fps: 0, latency_ms: 0 });
+  const [detections, setDetections] = useState([]);
+  const [error, setError] = useState('');
+
+  const toggleCamera = async () => {
+    const response = await fetch(running ? '/camera/stop' : '/camera/start', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ source }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setError(data.detail || 'Unable to open camera');
+      return;
+    }
+    setError('');
+    setRunning(!running);
+  };
+
+  useEffect(() => {
+    if (!running) return undefined;
+    const interval = setInterval(async () => {
+      const response = await fetch('/detections');
+      const data = await response.json();
+      setDetections(data.detections || []);
+      setMetrics(data.metrics || { fps: 0, latency_ms: 0 });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [running]);
+
+  const people = detections.filter((item) => item.label === 'person').length;
+  const distribution = detections.reduce((result, item) => ({ ...result, [item.label]: (result[item.label] || 0) + 1 }), {});
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -10,41 +44,38 @@ function App() {
           <p className="eyebrow">Portfolio project</p>
           <h1>Real-Time CV Analytics</h1>
         </div>
-        <button className="primary-btn">Start Camera</button>
+        <div className="controls">
+          <input value={source} onChange={(event) => setSource(event.target.value)} aria-label="Camera source" />
+          <button className="primary-btn" onClick={toggleCamera}>{running ? 'Stop Camera' : 'Start Camera'}</button>
+        </div>
       </header>
 
       <main className="dashboard-grid">
         <section className="panel camera-panel">
           <div className="panel-header">
             <h2>LIVE CAMERA</h2>
-            <span className="status-online">● Online</span>
+            <span className={running ? 'status-online' : 'status-offline'}>{running ? '● Online' : '● Offline'}</span>
           </div>
-          <div className="camera-placeholder">
-            <div className="stat-overlay">
-              <span>FPS: 28.4</span>
-              <span>Objects: 14</span>
-              <span>People: 9</span>
-              <span>Cars: 5</span>
-            </div>
+          <div className="camera-placeholder">{running ? <img src="/camera/stream" alt="Live camera stream" /> : <span>Start a camera source to begin</span>}
+            <div className="stat-overlay"><span>FPS: {metrics.fps.toFixed(1)}</span><span>Objects: {detections.length}</span><span>People: {people}</span><span>Latency: {metrics.latency_ms.toFixed(0)}ms</span></div>
           </div>
+          {error && <p className="error-message">{error}</p>}
         </section>
 
         <aside className="panel metrics-panel">
           <h3>Live Metrics</h3>
           <div className="metric-list">
-            <div><label>Entered</label><strong>124</strong></div>
-            <div><label>Exited</label><strong>98</strong></div>
-            <div><label>Occupancy</label><strong>26</strong></div>
-            <div><label>Latency</label><strong>31ms</strong></div>
+            <div><label>Tracked</label><strong>{detections.length}</strong></div>
+            <div><label>People</label><strong>{people}</strong></div>
+            <div><label>Classes</label><strong>{Object.keys(distribution).length}</strong></div>
+            <div><label>Latency</label><strong>{metrics.latency_ms.toFixed(0)}ms</strong></div>
           </div>
         </aside>
 
         <section className="panel events-panel">
           <h3>Recent Events</h3>
           <ul>
-            <li>Person #17 entered Entrance Region</li>
-            <li>Car #5 exited</li>
-            <li>Occupancy threshold exceeded</li>
+            {detections.length ? detections.slice(0, 5).map((item) => <li key={item.id}>{item.label} #{item.id} detected at {(item.confidence * 100).toFixed(0)}%</li>) : <li>No detections yet</li>}
           </ul>
         </section>
 

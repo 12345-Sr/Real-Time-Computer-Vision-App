@@ -1,16 +1,20 @@
 from fastapi import APIRouter
 
+from app.services.camera_service import camera_service
+
 router = APIRouter()
 
 
 @router.get("/detections")
 async def get_detections():
-    return {"detections": [], "count": 0}
+    _, detections, metrics = camera_service.snapshot()
+    return {"detections": detections, "count": len(detections), "metrics": metrics}
 
 
 @router.get("/tracks")
 async def get_tracks():
-    return {"tracks": [], "count": 0}
+    _, detections, _ = camera_service.snapshot()
+    return {"tracks": detections, "count": len(detections)}
 
 
 @router.get("/analytics")
@@ -32,9 +36,10 @@ async def get_events():
 
 @router.get("/metrics")
 async def get_metrics():
+    _, _, metrics = camera_service.snapshot()
     return {
-        "fps": 0.0,
-        "latency_ms": 0.0,
+        "fps": metrics["fps"],
+        "latency_ms": metrics["latency_ms"],
         "cpu_usage": 0.0,
         "gpu_usage": 0.0,
         "memory_usage": 0.0,
