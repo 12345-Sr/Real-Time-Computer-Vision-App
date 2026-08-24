@@ -1,0 +1,176 @@
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  color: #e4ebff;
+  background: #07111f;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: linear-gradient(180deg, #081421, #0f1d2d); }
+#root { min-height: 100vh; }
+
+.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #86a8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+}
+
+h1 { margin: 4px 0 0; font-size: 2.2rem; }
+
+.primary-btn {
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2dd4bf, #3b82f6);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+}
+
+.camera-panel {
+  grid-column: 1 / 2;
+}
+
+.metrics-panel {
+  grid-column: 2 / 3;
+}
+
+.events-panel, .analytics-panel {
+  grid-column: 1 / -1;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel h2, .panel h3 { margin: 0 0 12px; }
+
+.status-online {
+  color: #34d399;
+  font-weight: 700;
+}
+
+.camera-placeholder {
+  position: relative;
+  height: 480px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0f172a, #1b2637);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.camera-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255,255,255,0.2);
+}
+
+.stat-overlay {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.metric-list {
+  display: grid;
+  gap: 14px;
+}
+
+.metric-list div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(30,41,59,0.9);
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+li {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(30,41,59,0.9);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sparkline {
+  height: 160px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(45, 212, 191, 0.25), rgba(45, 212, 191, 0.05));
+  position: relative;
+  overflow: hidden;
+}
+
+.sparkline::after {
+  content: "";
+  position: absolute;
+  inset: 16px 10px 16px 10px;
+  background: linear-gradient(120deg, transparent 0%, transparent 30%, rgba(45,212,191,0.9) 32%, rgba(45,212,191,0.9) 36%, transparent 38%, transparent 100%);
+  clip-path: polygon(0% 70%, 12% 62%, 24% 68%, 35% 45%, 52% 58%, 63% 22%, 75% 34%, 88% 28%, 100% 10%, 100% 100%, 0% 100%);
+}
+
+.sparkline.alt::after {
+  background: linear-gradient(120deg, transparent 0%, transparent 30%, rgba(59,130,246,0.9) 32%, rgba(59,130,246,0.9) 36%, transparent 38%, transparent 100%);
+  clip-path: polygon(0% 80%, 14% 70%, 28% 74%, 42% 48%, 60% 60%, 72% 18%, 86% 26%, 100% 12%, 100% 100%, 0% 100%);
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .camera-panel, .metrics-panel, .events-panel, .analytics-panel { grid-column: auto; }
+}
