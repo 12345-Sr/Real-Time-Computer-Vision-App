@@ -98,7 +98,7 @@ h1 { margin: 4px 0 0; font-size: 2.2rem; }
   overflow: hidden;
 }
 
-.camera-placeholder img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.camera-placeholder img, .camera-placeholder video { width: 100%; height: 100%; object-fit: contain; display: block; }
 .camera-placeholder > span:not(.stat-overlay) { position: absolute; inset: 0; display: grid; place-items: center; color: #94a3b8; }
 
 .camera-placeholder::before {

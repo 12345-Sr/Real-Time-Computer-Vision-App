@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles.css';
 
@@ -8,20 +8,36 @@ function App() {
   const [metrics, setMetrics] = useState({ fps: 0, latency_ms: 0 });
   const [detections, setDetections] = useState([]);
   const [error, setError] = useState('');
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   const toggleCamera = async () => {
-    const response = await fetch(running ? '/camera/stop' : '/camera/start', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ source }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      setError(data.detail || 'Unable to open camera');
+    if (running) {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      setRunning(false);
       return;
     }
-    setError('');
-    setRunning(!running);
+    try {
+      if (source === '0') {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        streamRef.current = stream;
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      } else {
+        const response = await fetch('/camera/start', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ source }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Unable to open camera');
+      }
+      setError('');
+      setRunning(true);
+    } catch (cameraError) {
+      setError(cameraError.message || 'Camera permission was denied or no camera is available');
+    }
   };
 
   useEffect(() => {
@@ -56,7 +72,7 @@ function App() {
             <h2>LIVE CAMERA</h2>
             <span className={running ? 'status-online' : 'status-offline'}>{running ? '● Online' : '● Offline'}</span>
           </div>
-          <div className="camera-placeholder">{running ? <img src="/camera/stream" alt="Live camera stream" /> : <span>Start a camera source to begin</span>}
+          <div className="camera-placeholder">{source === '0' ? <video ref={videoRef} muted playsInline aria-label="Live webcam" /> : running ? <img src="/camera/stream" alt="Live camera stream" /> : <span>Start a camera source to begin</span>}
             <div className="stat-overlay"><span>FPS: {metrics.fps.toFixed(1)}</span><span>Objects: {detections.length}</span><span>People: {people}</span><span>Latency: {metrics.latency_ms.toFixed(0)}ms</span></div>
           </div>
           {error && <p className="error-message">{error}</p>}
