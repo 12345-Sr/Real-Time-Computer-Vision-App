@@ -20,6 +20,13 @@ def test_tracker_assigns_ids():
     assert tracks[0]["id"] == 1
 
 
+def test_tracker_keeps_id_for_overlapping_detection():
+    tracker = BaseTracker(max_age=5, min_hits=1)
+    first = tracker.update([{"bbox": (0, 0, 10, 10), "label": "person", "confidence": 0.9}])
+    second = tracker.update([{"bbox": (1, 1, 11, 11), "label": "person", "confidence": 0.9}])
+    assert first[0]["id"] == second[0]["id"]
+
+
 def test_event_generator_records_message():
     generator = EventGenerator()
     event = generator.add("entry", "Person #1 entered", object_id=1)
