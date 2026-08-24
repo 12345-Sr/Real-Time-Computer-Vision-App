@@ -10,6 +10,7 @@ function App() {
   const [error, setError] = useState('');
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const canvasRef = useRef(null);
 
   const toggleCamera = async () => {
     if (running) {
@@ -42,14 +43,33 @@ function App() {
 
   useEffect(() => {
     if (!running) return undefined;
+    const uploadFrame = async () => {
+      if (source !== '0' || !videoRef.current?.videoWidth) return;
+      const canvas = canvasRef.current;
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      canvas.getContext('2d').drawImage(videoRef.current, 0, 0);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.75));
+      const form = new FormData();
+      form.append('frame', blob, 'frame.jpg');
+      const response = await fetch('/camera/frame', { method: 'POST', body: form });
+      if (response.ok) {
+        const data = await response.json();
+        setDetections(data.detections || []);
+        setMetrics(data.metrics || { fps: 0, latency_ms: 0 });
+      }
+    };
     const interval = setInterval(async () => {
-      const response = await fetch('/detections');
-      const data = await response.json();
-      setDetections(data.detections || []);
-      setMetrics(data.metrics || { fps: 0, latency_ms: 0 });
-    }, 1000);
+      if (source === '0') await uploadFrame();
+      else {
+        const response = await fetch('/detections');
+        const data = await response.json();
+        setDetections(data.detections || []);
+        setMetrics(data.metrics || { fps: 0, latency_ms: 0 });
+      }
+    }, 700);
     return () => clearInterval(interval);
-  }, [running]);
+  }, [running, source]);
 
   const people = detections.filter((item) => item.label === 'person').length;
   const distribution = detections.reduce((result, item) => ({ ...result, [item.label]: (result[item.label] || 0) + 1 }), {});
@@ -73,6 +93,7 @@ function App() {
             <span className={running ? 'status-online' : 'status-offline'}>{running ? '● Online' : '● Offline'}</span>
           </div>
           <div className="camera-placeholder">{source === '0' ? <video ref={videoRef} muted playsInline aria-label="Live webcam" /> : running ? <img src="/camera/stream" alt="Live camera stream" /> : <span>Start a camera source to begin</span>}
+            <canvas ref={canvasRef} hidden />
             <div className="stat-overlay"><span>FPS: {metrics.fps.toFixed(1)}</span><span>Objects: {detections.length}</span><span>People: {people}</span><span>Latency: {metrics.latency_ms.toFixed(0)}ms</span></div>
           </div>
           {error && <p className="error-message">{error}</p>}

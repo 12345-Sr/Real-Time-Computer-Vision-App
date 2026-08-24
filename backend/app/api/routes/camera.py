@@ -1,6 +1,8 @@
 import asyncio
 
-from fastapi import APIRouter, HTTPException
+import cv2
+import numpy as np
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
 from app.services.camera_service import camera_service
@@ -30,6 +32,16 @@ async def camera_status() -> dict:
 @router.get("/detections")
 async def camera_detections() -> dict:
     _, detections, metrics = camera_service.snapshot()
+    return {"detections": detections, "count": len(detections), "metrics": metrics}
+
+
+@router.post("/frame")
+async def process_browser_frame(frame: UploadFile = File(...)) -> dict:
+    contents = await frame.read()
+    image = cv2.imdecode(np.frombuffer(contents, dtype=np.uint8), cv2.IMREAD_COLOR)
+    if image is None:
+        raise HTTPException(status_code=400, detail="Invalid image frame")
+    detections, metrics = camera_service.infer_frame(image)
     return {"detections": detections, "count": len(detections), "metrics": metrics}
 
 

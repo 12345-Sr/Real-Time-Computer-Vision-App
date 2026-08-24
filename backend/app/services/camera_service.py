@@ -21,6 +21,47 @@ class CameraService:
         self.latest_detections: list[dict] = []
         self.metrics = {"fps": 0.0, "latency_ms": 0.0}
         self.error: str | None = None
+        self.model = None
+
+    def _get_model(self):
+        if self.model is None:
+            from ultralytics import YOLO
+
+            manager = ModelManager(self.settings.MODEL_NAME, self.settings.MODEL_PATH, self.settings.DEVICE)
+            self.model = YOLO(manager.resolve_model_path())
+        return self.model
+
+    def infer_frame(self, frame) -> tuple[list[dict], dict]:
+        begin = time.perf_counter()
+        detections: list[dict] = []
+        try:
+            model = self._get_model()
+            result = model.predict(
+                frame,
+                conf=self.settings.CONFIDENCE_THRESHOLD,
+                iou=self.settings.IOU_THRESHOLD,
+                device=None if self.settings.DEVICE == "auto" else self.settings.DEVICE,
+                verbose=False,
+            )[0]
+            for box in result.boxes:
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+                detections.append({
+                    "id": len(detections) + 1,
+                    "label": result.names[int(box.cls[0])],
+                    "bbox": (x1, y1, x2, y2),
+                    "confidence": float(box.conf[0]),
+                })
+            annotated = draw_annotations(frame, detections)
+            encoded, buffer = cv2.imencode(".jpg", annotated)
+            if encoded:
+                with self.lock:
+                    self.latest_frame = buffer.tobytes()
+                    self.latest_detections = detections
+                    self.metrics["latency_ms"] = (time.perf_counter() - begin) * 1000
+            return detections, dict(self.metrics)
+        except Exception as exc:
+            self.error = f"Inference failed: {exc}"
+            return [], {"fps": 0.0, "latency_ms": 0.0}
 
     def start(self, source: str = "0") -> dict:
         if self.running:
@@ -59,10 +100,7 @@ class CameraService:
     def _process(self) -> None:
         model = None
         try:
-            from ultralytics import YOLO
-
-            manager = ModelManager(self.settings.MODEL_NAME, self.settings.MODEL_PATH, self.settings.DEVICE)
-            model = YOLO(manager.resolve_model_path())
+            model = self._get_model()
         except Exception as exc:
             self.error = f"Model loading failed: {exc}"
 
